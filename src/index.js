@@ -29,6 +29,16 @@ client.on("message", message => {
         message.channel.send("Your username: " + message.author.username +
                              "\nYour ID: " + message.author.id);
     }
+    else if (command === "argsinfo") {
+        if (!args.length) {
+            return message.channel.send("You didn't provide any arguments, " + message.author + "!");
+        }
+        else if (args[0] === "foo") {
+            return message.channel.send("bar");
+        }
+    
+        message.channel.send("First argument: " + args[0]);
+    }
 });
 
 client.login(config.token);
