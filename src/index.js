@@ -15,7 +15,10 @@ client.on("message", message => {
         message.channel.send("Bem entendido isso?");
     }
     else if (message.content === (config.prefix + "server")) {
-        message.channel.send("This server's name is: " + message.guild.name);
+        message.channel.send("Server name: " + message.guild.name +
+                             "\nTotal members: " + message.guild.memberCount +
+                             "\nCreated at: " + message.guild.createdAt +
+                             "\nRegion: " + message.guild.region);
     }
 });
 
