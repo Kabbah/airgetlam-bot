@@ -31,13 +31,21 @@ client.on("message", message => {
     }
     else if (command === "argsinfo") {
         if (!args.length) {
-            return message.channel.send("You didn't provide any arguments, " + message.author + "!");
+            return message.channel.reply("you didn't provide any arguments!");
         }
         else if (args[0] === "foo") {
             return message.channel.send("bar");
         }
     
         message.channel.send("First argument: " + args[0]);
+    }
+    else if (command === "call") {
+        if (!message.mentions.users.size) {
+            return message.reply("you need to tag a user in order to call them!");
+        }
+        const taggedUser = message.mentions.users.first();
+    
+        message.channel.send("Hey " + taggedUser.username + "!!!");
     }
 });
 
