@@ -47,6 +47,18 @@ client.on("message", message => {
     
         message.channel.send("Hey " + taggedUser.username + "!!!");
     }
+    else if (command === "avatar") {
+        if (!message.mentions.users.size) {
+            return message.channel.send("Your avatar: <" + message.author.displayAvatarURL + ">");
+        }
+    
+        
+        const avatarList = message.mentions.users.map(user => {
+            return (user.username + "'s avatar: <" + user.displayAvatarURL + ">");
+        });
+
+        message.channel.send(avatarList);
+    }
 });
 
 client.login(config.token);
