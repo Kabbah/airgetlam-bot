@@ -20,6 +20,10 @@ client.on("message", message => {
                              "\nCreated at: " + message.guild.createdAt +
                              "\nRegion: " + message.guild.region);
     }
+    else if (message.content === config.prefix + "userinfo") {
+        message.channel.send("Your username: " + message.author.username +
+                             "\nYour ID: " + message.author.id);
+    }
 });
 
 client.login(config.token);
