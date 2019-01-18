@@ -14,7 +14,7 @@ const commandsPath = "/src/commands";
 
 /* ========================================================================== */
 
-class ValimarBot {
+class AirgetlamBot {
     constructor() {
         this.config = require("./config.json");
         this.client = new Discord.Client();
@@ -132,6 +132,6 @@ class ValimarBot {
 
 /* ========================================================================== */
 
-module.exports = ValimarBot;
+module.exports = AirgetlamBot;
 
 /* ========================================================================== */

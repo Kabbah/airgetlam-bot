@@ -5,9 +5,9 @@
 /* Data: 2019/01/14                                                           */
 /* ========================================================================== */
 
-const ValimarBot = require("./bot.js");
+const AirgetlamBot = require("./bot.js");
 
-const bot = new ValimarBot();
+const bot = new AirgetlamBot();
 bot.init();
 
 /* ========================================================================== */
