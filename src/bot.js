@@ -20,6 +20,13 @@ class ValimarBot {
         this.client = new Discord.Client();
         this.client.commands = new Discord.Collection();
         this.cooldowns = new Discord.Collection();
+
+        process.on("SIGTERM", () => {
+            const MusicPlayerController = require("./musicplayer.js");
+            (new MusicPlayerController()).dropAllPlayers();
+
+            this.client.destroy().then(process.exit, process.exit);
+        });
     }
 
     /* ---------------------------------------------------------------------- */
