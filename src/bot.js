@@ -10,15 +10,31 @@ const fs = require("fs");
 
 /* ========================================================================== */
 
+// TODO: Colocar isso nas configurações
 const commandsPath = "/src/commands";
 
 /* ========================================================================== */
 
+/**
+ * Esta é a classe principal do bot, responsável por receber eventos de
+ * mensagens e fazer o processamento de comandos.
+ */
 class AirgetlamBot {
+
     constructor() {
+        /** Parâmetros de configuração. */
         this.config = require("./config.json");
+
+        /** Cliente Discord do bot. */
         this.client = new Discord.Client();
+
+        /** Estrutura de dados que armazena todos os comandos.
+         * As chaves são o nome do comando, e o valor é igual ao module.exports
+         * contido no arquivo do comando.
+         */
         this.client.commands = new Discord.Collection();
+
+        /** Estrutura de dados que armazena a lista de cooldowns de cada comando. */
         this.cooldowns = new Discord.Collection();
 
         process.on("SIGTERM", () => {
@@ -31,9 +47,13 @@ class AirgetlamBot {
 
     /* ---------------------------------------------------------------------- */
 
+    /**
+     * Carrega e habilita todos os comandos contidos nos scripts .js no
+     * diretório de comandos.
+     */
     loadCommands() {
         const commandFiles = fs.readdirSync(this.config.basedir + commandsPath)
-                               .filter(file => file.endsWith(".js"));
+            .filter(file => file.endsWith(".js"));
         
         for (const file of commandFiles) {
             const command = require("./commands/" + file);
@@ -43,32 +63,42 @@ class AirgetlamBot {
 
     /* ---------------------------------------------------------------------- */
 
+    /**
+     * Função executada quando o bot é lançado.
+     */
     onceReady() {
         console.log("Ready!");
     }
 
     /* ---------------------------------------------------------------------- */
 
+    /**
+     * Função chamada ao receber um evento "message", ou seja, quando um usuário
+     * envia uma mensagem.
+     * 
+     * Features:
+     *  - Processa apenas mensagens que iniciem com o prefixo do bot, e ignora
+     * mensagens enviadas por outros bots.
+     *  - Verifica nomes alternativos (aliases) de comandos.
+     *  - Evita a execução de comandos "guild-only" em ambientes DM.
+     *  - Verifica a existência de argumentos em comandos que exigem argumentos.
+     *  - Gerencia o cooldown dos comandos.
+     * 
+     * @param {Discord.Message} message mensagem recebida
+     */
     onMessage(message) {
-        // Ignora mensagens que não começam com o prefixo configurado ou
-        // enviadas por bots.
         if (!message.content.startsWith(this.config.prefix) || message.author.bot) return;
 
-        // Separa o comando dos argumentos, e obtém o comando, caso exista,
-        // verificando aliases.
         const args = message.content.slice(this.config.prefix.length).split(/ +/);
         const commandName = args.shift().toLowerCase();
         const command = this.client.commands.get(commandName) ||
                         this.client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
         if (!command) return;
     
-        // Bloqueia comandos "server-only" em mensagens privadas.
         if (command.guildOnly && message.channel.type !== "text") {
             return message.reply("I can't execute that command inside DMs!");
         }
     
-        // Identifica erros de falta de argumentos em comandos que precisam de
-        // argumentos.
         if (command.args && !args.length) {
             let reply = "you didn't provide any arguments!";
             
@@ -80,7 +110,6 @@ class AirgetlamBot {
             return message.reply(reply);
         }
     
-        // Gerencia cooldowns de uso de comandos
         if (!this.cooldowns.has(command.name)) {
             this.cooldowns.set(command.name, new Discord.Collection());
         }
@@ -88,8 +117,6 @@ class AirgetlamBot {
         const timestamps = this.cooldowns.get(command.name);
         const cooldownAmount = (command.cooldown || this.config.defaultCooldown) * 1000;
         
-        // Se o usuário já utilizou o comando recentemente, verifica se ainda
-        // está no período de cooldown, e responde adequadamente.
         if (timestamps.has(message.author.id)) {
             const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
     
@@ -101,13 +128,9 @@ class AirgetlamBot {
             }
         }
     
-        // Por fim, adiciona-se um cooldown ao par usuário/comando. Coloca-se,
-        // também, um timer para retirar o usuário da lista de cooldowns depois
-        // que terminar o tempo.
         timestamps.set(message.author.id, now);
         setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
 
-        // Agora pode-se executar o comando.
         try {
             command.execute(message, args);
         }
@@ -119,6 +142,9 @@ class AirgetlamBot {
 
     /* ---------------------------------------------------------------------- */
 
+    /**
+     * Inicializa o bot.
+     */
     init() {
         this.loadCommands();
 

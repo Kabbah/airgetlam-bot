@@ -6,37 +6,64 @@
 /* ========================================================================== */
 
 const Discord = require("discord.js");
-const fs = require("fs");
 
 /* ========================================================================== */
 
+/**
+ * Esta classe representa a instância de um player de músicas em um servidor.
+ */
 class MusicPlayer {
 
+    /**
+     * Construtor.
+     * @param {Discord.Snowflake} guildId ID do servidor
+     */
     constructor(guildId) {
-        /** ID of the server this player is running on */
+        /** ID do servidor em que este player está sendo executado.
+         * @type {Discord.Snowflake}
+         */
         this.guildId = guildId;
 
-        /** Voice connection, used to play sound files */
+        /** Voice connection, usada para reproduzir arquivos de áudio.
+         * @type {Discord.VoiceConnection}
+         */
         this.voiceConnection = null;
 
-        /** Volume, from 0.0 to 1.0 */
+        /** Volume, de 0.0 a 1.0.
+         * @type {number}
+         */
         this.volume = 1.0;
 
-        /** Flag that shows if the player is currently playing a song */
+        /** Flag que mostra se o player está reproduzindo alguma música.
+         * @type {boolean}
+         */
         this.isPlaying = false;
 
-        /** Reference to a leave timeout, started when no song is playing */
+        /** Referência a um timeout para sair do servidor, iniciado quando o
+         * player fica ocioso.
+         * @type {NodeJS.Timeout}
+         */
         this.leaveTimeout = null;
     }
 
     /* ---------------------------------------------------------------------- */
 
-    play(voiceChannel, filePath) {
-        const player = this;
+    /**
+     * Começa a reproduzir uma música. Caso seja necessário, conecta-se a um
+     * voice channel.
+     * 
+     * *Atenção:* caso o bot já esteja executando alguma música, este método
+     * apenas retorna sem fazer nada. Nesse caso, deve ser executado o método
+     * `enqueue`.
+     * 
+     * @param {Discord.VoiceChannel} voiceChannel canal para reproduzir música
+     * @param {string} filePath nome da música
+     */
+    startPlaying(voiceChannel, filePath) {
+        if (this.isPlaying) return;
 
-        // If the player is not connected to a voice channel, join it and create
-        // a new voice connection.
-        if (!player.voiceConnection) {
+        const player = this;
+        if (!player.voiceConnection || (player.voiceConnection.channel.id !== voiceChannel.id)) {
             voiceChannel.join().then(connection => {
                 player.voiceConnection = connection;
                 player.playMusic(filePath);
@@ -49,6 +76,14 @@ class MusicPlayer {
 
     /* ---------------------------------------------------------------------- */
 
+    /**
+     * Reproduz um arquivo de áudio no voice channel atual. Supõe que o bot está
+     * em um voice channel.
+     * Interrompe o timer de ociosidade.
+     * 
+     * @param {string} filePath nome da música
+     * @private
+     */
     playMusic(filePath) {
         const dispatcher = this.voiceConnection.playFile(filePath);
 
@@ -70,6 +105,14 @@ class MusicPlayer {
 
     /* ---------------------------------------------------------------------- */
 
+    /**
+     * Função executada quando a execução de uma música termina.
+     * Verifica se o bot está no mdoo auto-play ou se há mais itens na fila.
+     * Se sim, inicia a reprodução do próximo item.
+     * Senão, inicia o timer de ociosidade.
+     * 
+     * @param {MusicPlayer} player 
+     */
     static onSongEnd(player) {
         // TODO: Check queue for next song or autoplay mode.
 
@@ -85,6 +128,10 @@ class MusicPlayer {
 
     /* ---------------------------------------------------------------------- */
 
+    /**
+     * Inclui uma música na fila de reprodução.
+     * @param {string} song 
+     */
     enqueue(song) {
         // TODO
         console.log("Not implemented: enqueue " + song);
@@ -92,6 +139,10 @@ class MusicPlayer {
 
     /* ---------------------------------------------------------------------- */
 
+    /**
+     * Interrompe qualquer execução de áudio em andamento e desconecta o player
+     * do canal de voz no qual está conectado.
+     */
     disconnect() {
         if (this.voiceConnection) {
             this.voiceConnection.disconnect();
@@ -103,14 +154,25 @@ class MusicPlayer {
 
 /* ========================================================================== */
 
+/**
+ * Esta classe é um singleton que faz o controle de todos os players de músicas,
+ * em diversos servidores.
+ */
 class MusicPlayerController {
 
+    /**
+     * Este é um construtor singleton: instancia um objeto em sua primeira
+     * chamada, e nas chamadas subsequentes apenas retorna essa instância.
+     */
     constructor() {
         const instance = this.constructor.instance;
         if (instance) {
             return instance;
         }
 
+        /** Estrutura de dados que mantém os players de cada servidor.
+         * @type {Discord.Collection<Discord.Snowflake, MusicPlayer>}
+         */
         this.players = new Discord.Collection();
 
         this.constructor.instance = this;
@@ -118,39 +180,45 @@ class MusicPlayerController {
 
     /* ---------------------------------------------------------------------- */
 
+    /**
+     * Processa um comando de reprodução de música.
+     * 
+     * @param {Discord.Message} message mensagem em que o comando foi recebido
+     * @param {string} filePath nome da música
+     */
     play(message, filePath) {
-        // Terminate command early if the user is not in a voice channel.
+        // Finaliza o comando prematuramente se o usuário não estiver em um
+        // voice channel.
         if (!message.member.voiceChannel) {
-            return message.reply("you are not in a voice channel!");
+            message.reply("you are not in a voice channel!");
+            return;
         }
 
         const guildId = message.guild.id;
 
         let player = this.players.get(guildId);
         if (player && player.voiceConnection) {
-            // There is already a player instance for this server.
-            // Therefore, the bot should be connected to a voice channel in the
-            // guild.
-            // A sanity check (player.voiceConnection) is made, just in case.
+            // O bot já está em um voice channel no server.
 
             if (player.isPlaying) {
                 if (player.voiceConnection.channel.id === message.member.voiceChannel.id) {
-                    return player.enqueue(filePath);
+                    player.enqueue(filePath);
                 }
-
-                return message.reply("you must be in the same voice channel I'm playing at the moment!");
+                else {
+                    message.reply("you must be in the same voice channel I'm playing at the moment!");
+                }
             }
-            
-            player.play(message.member.voiceChannel, filePath);
-
+            else {
+                player.startPlaying(message.member.voiceChannel, filePath);
+            }
         }
         else {
-            // The bot is not in any voice channel in the server.
-            // Create a new player instance.
+            // O bot não está em nenhum voice channel no server.
+            // Cria um novo player.
             player = new MusicPlayer(guildId);
             this.players.set(guildId, player);
 
-            player.play(message.member.voiceChannel, filePath);
+            player.startPlaying(message.member.voiceChannel, filePath);
         }
     }
 
