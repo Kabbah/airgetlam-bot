@@ -6,6 +6,7 @@
 /* ========================================================================== */
 
 const Discord = require("discord.js");
+const ytdl = require("ytdl-core");
 
 /* ========================================================================== */
 
@@ -57,20 +58,20 @@ class MusicPlayer {
      * `enqueue`.
      * 
      * @param {Discord.VoiceChannel} voiceChannel canal para reproduzir música
-     * @param {string} filePath nome da música
+     * @param {string} songName nome da música
      */
-    startPlaying(voiceChannel, filePath) {
+    startPlaying(voiceChannel, songName) {
         if (this.isPlaying) return;
 
         const player = this;
         if (!player.voiceConnection || (player.voiceConnection.channel.id !== voiceChannel.id)) {
             voiceChannel.join().then(connection => {
                 player.voiceConnection = connection;
-                player.playMusic(filePath);
+                player.playMusic(songName);
             }).catch(console.log);
         }
         else {    
-            player.playMusic(filePath);
+            player.playMusic(songName);
         }
     }
 
@@ -81,11 +82,17 @@ class MusicPlayer {
      * em um voice channel.
      * Interrompe o timer de ociosidade.
      * 
-     * @param {string} filePath nome da música
+     * @param {string} songName nome da música
      * @private
      */
-    playMusic(filePath) {
-        const dispatcher = this.voiceConnection.playFile(filePath);
+    playMusic(songName) {
+        const stream = ytdl("https://www.youtube.com/watch?v=" + songName);
+        const streamOptions = { seek: 0, volume: 1, bitrate: 48000, passes: 2 };
+
+        console.log(songName);
+
+        // const dispatcher = this.voiceConnection.playFile(filePath);
+        const dispatcher = this.voiceConnection.playStream(stream, streamOptions);
 
         if (this.leaveTimeout) {
             clearTimeout(this.leaveTimeout);
@@ -95,8 +102,9 @@ class MusicPlayer {
 
         dispatcher.setVolume(this.volume);
         
-        dispatcher.on("end", () => {
+        dispatcher.on("end", reason => {
             MusicPlayer.onSongEnd(this);
+            if (reason) console.log(reason);
         });
         dispatcher.on("error", e => {
             console.error(e);
@@ -184,9 +192,9 @@ class MusicPlayerController {
      * Processa um comando de reprodução de música.
      * 
      * @param {Discord.Message} message mensagem em que o comando foi recebido
-     * @param {string} filePath nome da música
+     * @param {string} songName nome da música
      */
-    play(message, filePath) {
+    play(message, songName) {
         // Finaliza o comando prematuramente se o usuário não estiver em um
         // voice channel.
         if (!message.member.voiceChannel) {
@@ -202,14 +210,14 @@ class MusicPlayerController {
 
             if (player.isPlaying) {
                 if (player.voiceConnection.channel.id === message.member.voiceChannel.id) {
-                    player.enqueue(filePath);
+                    player.enqueue(songName);
                 }
                 else {
                     message.reply("you must be in the same voice channel I'm playing at the moment!");
                 }
             }
             else {
-                player.startPlaying(message.member.voiceChannel, filePath);
+                player.startPlaying(message.member.voiceChannel, songName);
             }
         }
         else {
@@ -218,7 +226,7 @@ class MusicPlayerController {
             player = new MusicPlayer(guildId);
             this.players.set(guildId, player);
 
-            player.startPlaying(message.member.voiceChannel, filePath);
+            player.startPlaying(message.member.voiceChannel, songName);
         }
     }
 
