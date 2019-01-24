@@ -38,8 +38,8 @@ class AirgetlamBot {
         this.cooldowns = new Discord.Collection();
 
         process.on("SIGTERM", () => {
-            const MusicPlayerController = require("./musicplayer.js");
-            (new MusicPlayerController()).dropAllPlayers();
+            const MusicController = require("./music/musiccontroller.js");
+            (new MusicController()).dropAllPlayers();
 
             this.client.destroy().then(process.exit, process.exit);
         });
