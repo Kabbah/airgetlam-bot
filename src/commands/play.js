@@ -7,9 +7,8 @@ module.exports = {
     guildOnly: true,
     cooldown: 1,
     execute(message, args) {
-        // Singleton
-        const musicplayer = new MusicController();
+        const musiccontroller = new MusicController();
         // musicplayer.play(message, "/home/victor/Music/Sen no Kiseki OST - Don't be Defeated by a Friend!.mp3");
-        musicplayer.play(message, args[0]);
+        musiccontroller.play(message, args[0]);
     },
 };

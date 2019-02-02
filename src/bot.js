@@ -8,6 +8,8 @@
 const Discord = require("discord.js");
 const fs = require("fs");
 
+const MusicController = require("./music/musiccontroller.js");
+
 /* ========================================================================== */
 
 // TODO: Colocar isso nas configurações
@@ -38,8 +40,8 @@ class AirgetlamBot {
         this.cooldowns = new Discord.Collection();
 
         process.on("SIGTERM", () => {
-            const MusicController = require("./music/musiccontroller.js");
-            (new MusicController()).dropAllPlayers();
+            const musiccontroller = new MusicController();
+            musiccontroller.dropAllPlayers();
 
             this.client.destroy().then(process.exit, process.exit);
         });

@@ -8,8 +8,6 @@
 const Discord = require("discord.js");
 const ytdl = require("ytdl-core");
 
-const MusicController = require("./musiccontroller.js");
-
 /* ========================================================================== */
 
 const ytdlOptions = {
@@ -29,11 +27,16 @@ class MusicPlayer {
      * Construtor.
      * @param {Discord.Snowflake} guildId ID do servidor
      */
-    constructor(guildId) {
+    constructor(guildId, musicController) {
         /** ID do servidor em que este player está sendo executado.
          * @type {Discord.Snowflake}
          */
         this.guildId = guildId;
+        
+        /** Referência ao controlador de musicas
+         * @type {MusicController}
+         */
+        this.musicController = musicController;
 
         /** Voice connection, usada para reproduzir arquivos de áudio.
          * @type {Discord.VoiceConnection}
@@ -137,7 +140,7 @@ class MusicPlayer {
         // voice channel.
         player.isPlaying = false;
         player.leaveTimeout = setTimeout(() => {
-            (new MusicController()).dropPlayer(player);
+            player.musicController.dropPlayer(player);
         }, 10000);
         // TODO: put timer miliseconds on config.json
         

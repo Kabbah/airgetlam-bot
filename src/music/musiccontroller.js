@@ -59,6 +59,10 @@ class MusicController {
 
             if (player.isPlaying) {
                 if (player.voiceConnection.channel.id === message.member.voiceChannel.id) {
+                    // DEBUG
+                    console.log("message.member.id: " + message.member.id);
+                    console.log("" + message);
+
                     player.enqueue(songName);
                 }
                 else {
@@ -72,7 +76,7 @@ class MusicController {
         else {
             // O bot não está em nenhum voice channel no server.
             // Cria um novo player.
-            player = new MusicPlayer(guildId);
+            player = new MusicPlayer(guildId, this);
             this.players.set(guildId, player);
 
             player.startPlaying(message.member.voiceChannel, songName);
