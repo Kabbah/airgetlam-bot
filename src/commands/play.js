@@ -3,6 +3,7 @@ const MusicController = require("../music/musiccontroller.js");
 module.exports = {
     name: "play",
     description: "Plays a YouTube video.",
+    aliases: ["p"],
     args: true,
     guildOnly: true,
     cooldown: 1,
