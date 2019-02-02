@@ -69,7 +69,7 @@ class AirgetlamBot {
      * Função executada quando o bot é lançado.
      */
     onceReady() {
-        console.log("Ready!");
+        console.log("Airgetlam is ready!");
     }
 
     /* ---------------------------------------------------------------------- */

@@ -8,6 +8,8 @@
 const Discord = require("discord.js");
 const ytdl = require("ytdl-core");
 
+const MusicQueueItem = require("./musicqueueitem.js");
+
 /* ========================================================================== */
 
 const ytdlOptions = {
@@ -58,6 +60,11 @@ class MusicPlayer {
          * @type {NodeJS.Timeout}
          */
         this.leaveTimeout = null;
+
+        /** Fila de musicas.
+         * @type {string[]}
+         */
+        this.queue = [];
     }
 
     /* ---------------------------------------------------------------------- */
@@ -101,7 +108,7 @@ class MusicPlayer {
     playMusic(songName) {
         const stream = ytdl("https://www.youtube.com/watch?v=" + songName, ytdlOptions);
 
-        console.log(songName);
+        console.log("Now playing: " + songName);
 
         // const dispatcher = this.voiceConnection.playFile(filePath);
         const dispatcher = this.voiceConnection.playStream(stream);
@@ -135,6 +142,12 @@ class MusicPlayer {
      */
     static onSongEnd(player) {
         // TODO: Check queue for next song or autoplay mode.
+        if (player.queue.length > 0) {
+            const queueItem = player.queue.shift();
+
+            player.playMusic(queueItem.song);
+            return;
+        }
 
         // If there is no song to play, start a timeout for the bot to leave the
         // voice channel.
@@ -150,11 +163,13 @@ class MusicPlayer {
 
     /**
      * Inclui uma música na fila de reprodução.
+     * @param {Discord.GuildMember} member usuário que solicitou a música
      * @param {string} song 
      */
-    enqueue(song) {
-        // TODO
-        console.log("Not implemented: enqueue " + song);
+    enqueue(member, song) {
+        this.queue.push(new MusicQueueItem(member, song));
+
+        console.log("Song \"" + song + "\" enqueued by " + member.displayName);
     }
 
     /* ---------------------------------------------------------------------- */

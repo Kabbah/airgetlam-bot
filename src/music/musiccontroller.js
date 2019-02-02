@@ -59,11 +59,7 @@ class MusicController {
 
             if (player.isPlaying) {
                 if (player.voiceConnection.channel.id === message.member.voiceChannel.id) {
-                    // DEBUG
-                    console.log("message.member.id: " + message.member.id);
-                    console.log("" + message);
-
-                    player.enqueue(songName);
+                    player.enqueue(message.member, songName);
                 }
                 else {
                     message.reply("you must be in the same voice channel I'm playing at the moment!");
