@@ -7,9 +7,14 @@
     "start": "node ./src/index.js"
   },
   "dependencies": {
-    "discord.js": "~11.4.2",
-    "ytdl-core": "~0.29.1",
-    "node-opus": "0.3.1"
+    "bufferutil": "^4.0.1",
+    "discord.js": "^11.4.2",
+    "erlpack": "github:hammerandchisel/erlpack",
+    "libsodium-wrappers": "^0.7.4",
+    "node-opus": "^0.3.1",
+    "sodium": "^3.0.2",
+    "uws": "^99.0.0",
+    "ytdl-core": "^0.29.1"
   },
   "author": "Victor Barpp Gomes",
   "license": "ISC"
