@@ -7,7 +7,7 @@ const youtube = google.youtube({
 
 async function doSearch(query) {
     const searchResponse = await youtube.search.list({
-        part: "id,snippet",
+        part: "snippet",
         type: "video",
         q: query,
         maxResults: config.youtube.maxResults,
@@ -23,7 +23,7 @@ async function doSearch(query) {
         console.log(item.snippet.thumbnails);
         console.log();
     }
-
+    
     const videoDetails = await youtube.videos.list({
         part: "contentDetails",
         id: ids.join(","),

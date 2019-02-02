@@ -6,6 +6,13 @@
 /* ========================================================================== */
 
 const Discord = require("discord.js");
+const { google } = require("googleapis");
+
+const config = require("../config.json");
+const youtube = google.youtube({
+    version: "v3",
+    auth: config.youtube.key,
+});
 
 const MusicPlayer = require("./musicplayer.js");
 
@@ -59,14 +66,20 @@ class MusicController {
 
             if (player.isPlaying) {
                 if (player.voiceConnection.channel.id === message.member.voiceChannel.id) {
-                    player.enqueue(message.member, songName);
+                    searchYouTube(songName).then(videoData => {
+                        if (videoData === null) return;
+                        player.enqueue(message.member, videoData.id);
+                    }).catch(console.error);
                 }
                 else {
                     message.reply("you must be in the same voice channel I'm playing at the moment!");
                 }
             }
             else {
-                player.startPlaying(message.member.voiceChannel, songName);
+                searchYouTube(songName).then(videoData => {
+                    if (videoData === null) return;
+                    player.startPlaying(message.member.voiceChannel, videoData.id);
+                });
             }
         }
         else {
@@ -75,7 +88,10 @@ class MusicController {
             player = new MusicPlayer(guildId, this);
             this.players.set(guildId, player);
 
-            player.startPlaying(message.member.voiceChannel, songName);
+            searchYouTube(songName).then(videoData => {
+                if (videoData === null) return;
+                player.startPlaying(message.member.voiceChannel, videoData.id);
+            });
         }
     }
 
@@ -97,6 +113,44 @@ class MusicController {
         this.players.deleteAll();
     }
 
+}
+
+/* ========================================================================== */
+
+async function searchYouTube(query) {
+    const searchResponse = await youtube.search.list({
+        part: "snippet",
+        type: "video",
+        q: query,
+        maxResults: 1,
+        regionCode: config.youtube.regionCode,
+    });
+
+    if (searchResponse.data.items.length === 0) {
+        return null;
+    }
+
+    const videoInfo = searchResponse.data.items[0];
+
+    // TODO: Alterar isso por uma classe decente
+    let videoData = {
+        id: videoInfo.id.videoId,
+        title: videoInfo.snippet.title,
+        channelTitle: videoInfo.snippet.channelTitle,
+        thumbnails: videoInfo.snippet.thumbnails.default,
+        duration: null,
+    }
+    
+    const videoDetails = await youtube.videos.list({
+        part: "contentDetails",
+        id: videoInfo.id.videoId,
+    });
+
+    if (videoDetails.data.items.length !== 0) {
+        videoData.duration = videoDetails.data.items[0].contentDetails.duration;
+    }
+
+    return videoData;
 }
 
 /* ========================================================================== */
