@@ -8,7 +8,7 @@
 const Discord = require("discord.js");
 const ytdl = require("ytdl-core");
 
-const MusicQueueItem = require("./musicqueueitem.js");
+const MusicQueueItem = require("./music-queue-item.js");
 
 /* ========================================================================== */
 

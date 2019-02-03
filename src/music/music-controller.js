@@ -14,7 +14,7 @@ const youtube = google.youtube({
     auth: config.youtube.key,
 });
 
-const MusicPlayer = require("./musicplayer.js");
+const MusicPlayer = require("./music-player.js");
 
 /* ========================================================================== */
 
@@ -133,7 +133,7 @@ async function searchYouTube(query) {
     const videoInfo = searchResponse.data.items[0];
 
     // TODO: Alterar isso por uma classe decente
-    let videoData = {
+    const videoData = {
         id: videoInfo.id.videoId,
         title: videoInfo.snippet.title,
         channelTitle: videoInfo.snippet.channelTitle,

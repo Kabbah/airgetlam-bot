@@ -1,4 +1,4 @@
-const MusicController = require("../music/musiccontroller.js");
+const MusicController = require("../music/music-controller.js");
 
 module.exports = {
     name: "play",
@@ -8,8 +8,7 @@ module.exports = {
     guildOnly: true,
     cooldown: 1,
     execute(message, args) {
-        const musiccontroller = new MusicController();
-        // musicplayer.play(message, "/home/victor/Music/Sen no Kiseki OST - Don't be Defeated by a Friend!.mp3");
-        musiccontroller.play(message, args.join(" "));
+        const musicController = new MusicController();
+        musicController.play(message, args.join(" "));
     },
 };

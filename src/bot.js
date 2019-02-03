@@ -8,7 +8,7 @@
 const Discord = require("discord.js");
 const fs = require("fs");
 
-const MusicController = require("./music/musiccontroller.js");
+const MusicController = require("./music/music-controller.js");
 
 /* ========================================================================== */
 
