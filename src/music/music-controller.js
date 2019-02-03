@@ -15,6 +15,7 @@ const youtube = google.youtube({
 });
 
 const MusicPlayer = require("./music-player.js");
+const MusicSong = require("./music-song.js");
 
 /* ========================================================================== */
 
@@ -66,9 +67,10 @@ class MusicController {
 
             if (player.isPlaying) {
                 if (player.voiceConnection.channel.id === message.member.voiceChannel.id) {
-                    searchYouTube(songName).then(videoData => {
-                        if (videoData === null) return;
-                        player.enqueue(message.member, videoData.id);
+                    searchYouTube(songName).then(musicSong => {
+                        if (musicSong === null) return;
+                        player.setTextChannel(message.channel);
+                        player.enqueue(message.member, musicSong);
                     }).catch(console.error);
                 }
                 else {
@@ -76,9 +78,10 @@ class MusicController {
                 }
             }
             else {
-                searchYouTube(songName).then(videoData => {
-                    if (videoData === null) return;
-                    player.startPlaying(message.member.voiceChannel, videoData.id);
+                searchYouTube(songName).then(musicSong => {
+                    if (musicSong === null) return;
+                    player.setTextChannel(message.channel);
+                    player.startPlaying(message.member.voiceChannel, musicSong);
                 });
             }
         }
@@ -88,9 +91,10 @@ class MusicController {
             player = new MusicPlayer(guildId, this);
             this.players.set(guildId, player);
 
-            searchYouTube(songName).then(videoData => {
-                if (videoData === null) return;
-                player.startPlaying(message.member.voiceChannel, videoData.id);
+            searchYouTube(songName).then(musicSong => {
+                if (musicSong === null) return;
+                player.setTextChannel(message.channel);
+                player.startPlaying(message.member.voiceChannel, musicSong);
             });
         }
     }
@@ -131,15 +135,7 @@ async function searchYouTube(query) {
     }
 
     const videoInfo = searchResponse.data.items[0];
-
-    // TODO: Alterar isso por uma classe decente
-    const videoData = {
-        id: videoInfo.id.videoId,
-        title: videoInfo.snippet.title,
-        channelTitle: videoInfo.snippet.channelTitle,
-        thumbnails: videoInfo.snippet.thumbnails.default,
-        duration: null,
-    }
+    const musicSong = new MusicSong(videoInfo);
     
     const videoDetails = await youtube.videos.list({
         part: "contentDetails",
@@ -147,10 +143,10 @@ async function searchYouTube(query) {
     });
 
     if (videoDetails.data.items.length !== 0) {
-        videoData.duration = videoDetails.data.items[0].contentDetails.duration;
+        musicSong.setDuration(videoDetails.data.items[0].contentDetails.duration);
     }
 
-    return videoData;
+    return musicSong;
 }
 
 /* ========================================================================== */

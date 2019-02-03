@@ -7,6 +7,8 @@
 
 const Discord = require("discord.js");
 
+const MusicSong = require("./music-song.js");
+
 /* ========================================================================== */
 
 /** Esta classe representa um item de uma fila de músicas. Foi implementada
@@ -16,12 +18,14 @@ const Discord = require("discord.js");
 class MusicQueueItem {
     /** Construtor único. Inicializa os atributos.
      * @param {Discord.GuildMember} member usuário que solicitou a música
-     * @param {string} song nome da música solicitada
+     * @param {MusicSong} song nome da música solicitada
      */
     constructor(member, song) {
-        this.userId = member.id;
-        this.userDisplayName = member.displayName;
-        this.userDisplayAvatarUrl = member.user.displayAvatarURL;
+        this.user = {
+            id: member.id,
+            displayName: member.displayName,
+            displayAvatarUrl: member.user.displayAvatarURL,
+        };
         this.song = song;
     }
 }

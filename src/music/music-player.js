@@ -9,6 +9,7 @@ const Discord = require("discord.js");
 const ytdl = require("ytdl-core");
 
 const MusicQueueItem = require("./music-queue-item.js");
+const MusicSong = require("./music-song.js");
 
 /* ========================================================================== */
 
@@ -40,6 +41,12 @@ class MusicPlayer {
          */
         this.musicController = musicController;
 
+        /** Canal de texto atual (no qual o bot enviará as mensagens a cada
+         * troca de música, por exemplo)
+         * @type {Discord.TextChannel}
+         */
+        this.textChannel = null;
+
         /** Voice connection, usada para reproduzir arquivos de áudio.
          * @type {Discord.VoiceConnection}
          */
@@ -62,9 +69,19 @@ class MusicPlayer {
         this.leaveTimeout = null;
 
         /** Fila de musicas.
-         * @type {string[]}
+         * @type {MusicQueueItem[]}
          */
         this.queue = [];
+    }
+
+    /* ---------------------------------------------------------------------- */
+
+    /** Vincula o player de músicas a um canal de texto. Todas as mensagens
+     * autônomas do bot (ex: troca de música) serão enviadas nesse canal.
+     * @param {Discord.TextChannel} textChannel canal de texto
+     */
+    setTextChannel(textChannel) {
+        this.textChannel = textChannel;
     }
 
     /* ---------------------------------------------------------------------- */
@@ -78,20 +95,20 @@ class MusicPlayer {
      * `enqueue`.
      * 
      * @param {Discord.VoiceChannel} voiceChannel canal para reproduzir música
-     * @param {string} songName nome da música
+     * @param {MusicSong} song música a reproduzir
      */
-    startPlaying(voiceChannel, songName) {
+    startPlaying(voiceChannel, song) {
         if (this.isPlaying) return;
 
         const player = this;
         if (!player.voiceConnection || (player.voiceConnection.channel.id !== voiceChannel.id)) {
             voiceChannel.join().then(connection => {
                 player.voiceConnection = connection;
-                player.playMusic(songName);
+                player.playYouTube(song.id);
             }).catch(console.log);
         }
         else {    
-            player.playMusic(songName);
+            player.playYouTube(song.id);
         }
     }
 
@@ -102,13 +119,13 @@ class MusicPlayer {
      * em um voice channel.
      * Interrompe o timer de ociosidade.
      * 
-     * @param {string} songName nome da música
+     * @param {string} songId ID da música no YouTube
      * @private
      */
-    playMusic(songName) {
-        const stream = ytdl("https://www.youtube.com/watch?v=" + songName, ytdlOptions);
+    playYouTube(songId) {
+        const stream = ytdl("https://www.youtube.com/watch?v=" + songId, ytdlOptions);
 
-        console.log("Now playing: " + songName);
+        console.log("Now playing: " + songId);
 
         // const dispatcher = this.voiceConnection.playFile(filePath);
         const dispatcher = this.voiceConnection.playStream(stream);
@@ -145,7 +162,7 @@ class MusicPlayer {
         if (player.queue.length > 0) {
             const queueItem = player.queue.shift();
 
-            player.playMusic(queueItem.song);
+            player.playYouTube(queueItem.song.id);
             return;
         }
 
@@ -164,12 +181,12 @@ class MusicPlayer {
     /**
      * Inclui uma música na fila de reprodução.
      * @param {Discord.GuildMember} member usuário que solicitou a música
-     * @param {string} song 
+     * @param {MusicSong} song 
      */
     enqueue(member, song) {
         this.queue.push(new MusicQueueItem(member, song));
 
-        console.log("Song \"" + song + "\" enqueued by " + member.displayName);
+        console.log("Song \"" + song.title + "\" enqueued by " + member.displayName);
     }
 
     /* ---------------------------------------------------------------------- */
