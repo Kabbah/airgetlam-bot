@@ -5,6 +5,8 @@
 /* Data: 2019/02/02                                                           */
 /* ========================================================================== */
 
+const moment = require("moment");
+
 /* ========================================================================== */
 
 /** Esta classe define os atributos relevantes de uma música.
@@ -17,17 +19,17 @@ class MusicSong {
         this.id = video.id.videoId;
         this.title = video.snippet.title;
         this.channelTitle = video.snippet.channelTitle;
-        this.thumbnail = video.snippet.thumbnails.default;
+        this.thumbnail = video.snippet.thumbnails.default.url;
         this.duration = null;
     }
 
     /* ---------------------------------------------------------------------- */
 
     /** Inicializa o atributo duration (pois é obtido em uma consulta separada).
-     * @param {string} duration duracão da música
+     * @param {string} duration duracão da música no formato ISO 8601
      */
     setDuration(duration) {
-        this.duration = duration;
+        this.duration = moment.duration(duration);
     }
 }
 

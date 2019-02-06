@@ -107,7 +107,7 @@ class MusicPlayer {
                 player.playYouTube(song.id);
             }).catch(console.log);
         }
-        else {    
+        else {
             player.playYouTube(song.id);
         }
     }
@@ -187,6 +187,16 @@ class MusicPlayer {
         this.queue.push(new MusicQueueItem(member, song));
 
         console.log("Song \"" + song.title + "\" enqueued by " + member.displayName);
+
+        const embed = new Discord.RichEmbed()
+            .setColor(0x286ee0)
+            .setTitle("Song enqueued")
+            .setDescription("[" + song.title + "](" + "https://www.youtube.com/watch?v=" + song.id + ")\n" +
+                "**Channel:** " + song.channelTitle + "\n" +
+                "**Duration:** " + song.duration.asSeconds() + " s\n" +
+                "**Enqueued by:** " + member.displayName)
+            .setThumbnail(song.thumbnail);
+        this.textChannel.send(embed);
     }
 
     /* ---------------------------------------------------------------------- */
