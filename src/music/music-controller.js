@@ -42,7 +42,7 @@ class MusicController {
 
         this.constructor.instance = this;
     }
-
+    
     /* ---------------------------------------------------------------------- */
 
     /**
@@ -60,43 +60,44 @@ class MusicController {
         }
 
         const guildId = message.guild.id;
-
         let player = this.players.get(guildId);
-        if (player && player.voiceConnection) {
-            // O bot já está em um voice channel no server.
-
-            if (player.isPlaying) {
-                if (player.voiceConnection.channel.id === message.member.voiceChannel.id) {
-                    searchYouTube(songName).then(musicSong => {
-                        if (musicSong === null) return;
-                        player.setTextChannel(message.channel);
-                        player.enqueue(message.member, musicSong);
-                    }).catch(console.error);
-                }
-                else {
-                    message.reply("you must be in the same voice channel I'm playing at the moment!");
-                }
-            }
-            else {
-                searchYouTube(songName).then(musicSong => {
-                    if (musicSong === null) return;
-                    player.setTextChannel(message.channel);
-                    player.startPlaying(message.member.voiceChannel, musicSong);
-                });
-            }
-        }
-        else {
-            // O bot não está em nenhum voice channel no server.
-            // Cria um novo player.
+        
+        // Instancia um novo player se necessário.
+        if (!player) {
             player = new MusicPlayer(guildId, this);
             this.players.set(guildId, player);
-
+        }
+        
+        // START PLAYING
+        // Caso em que:
+        //  * ou o bot não está em nenhum voice channel no server,
+        //  * ou o bot está em um voice channel, mas não está reproduzindo nada.
+        if (!player.voiceConnection || !player.isPlaying) {
+            player.isPlaying = true;
             searchYouTube(songName).then(musicSong => {
                 if (musicSong === null) return;
                 player.setTextChannel(message.channel);
                 player.startPlaying(message.member.voiceChannel, musicSong);
             });
+            return;
         }
+        
+        // ENQUEUE
+        // Caso em que o bot está reproduzindo algo, e está no mesmo voice
+        // channel que o membro que solicitou uma música.
+        if (player.voiceConnection.channel.id === message.member.voiceChannel.id) {
+            searchYouTube(songName).then(musicSong => {
+                if (musicSong === null) return;
+                player.setTextChannel(message.channel);
+                player.enqueue(message.member, musicSong);
+            }).catch(console.error);
+            return;
+        }
+        
+        // FAIL
+        // Caso em que o bot está reproduzindo algo, e não está no mesmo voice
+        // channel que o membro que solicitou uma música.
+        message.reply("you must be in the same voice channel I'm playing at the moment!");
     }
 
     /* ---------------------------------------------------------------------- */

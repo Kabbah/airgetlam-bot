@@ -36,7 +36,9 @@ class AirgetlamBot {
          */
         this.client.commands = new Discord.Collection();
 
-        /** Estrutura de dados que armazena a lista de cooldowns de cada comando. */
+        /** Estrutura de dados que armazena a lista de cooldowns de cada
+         * comando.
+         */
         this.cooldowns = new Discord.Collection();
 
         process.on("SIGTERM", () => {
@@ -45,6 +47,20 @@ class AirgetlamBot {
 
             this.client.destroy().then(process.exit, process.exit);
         });
+    }
+    
+    /* ---------------------------------------------------------------------- */
+
+    /**
+     * Inicializa o bot.
+     */
+    init() {
+        this.loadCommands();
+
+        this.client.once("ready", () => this.onceReady());
+        this.client.on("message", message => this.onMessage(message));
+
+        this.client.login(this.config.token);
     }
 
     /* ---------------------------------------------------------------------- */
@@ -89,49 +105,36 @@ class AirgetlamBot {
      * @param {Discord.Message} message mensagem recebida
      */
     onMessage(message) {
-        if (!message.content.startsWith(this.config.prefix) || message.author.bot) return;
+        if (!this.isMessageValid(message)) return;
 
-        const args = message.content.slice(this.config.prefix.length).split(/ +/);
-        const commandName = args.shift().toLowerCase();
-        const command = this.client.commands.get(commandName) ||
-                        this.client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+        const { commandName, args } = this.extractCommandAndArgs(message);
+        const command = this.getCommandByNameOrAlias(commandName);
         if (!command) return;
     
         if (command.guildOnly && message.channel.type !== "text") {
-            return message.reply("I can't execute that command inside DMs!");
+            message.reply("I can't execute that command inside DMs!");
+            return;
         }
     
         if (command.args && !args.length) {
             let reply = "you didn't provide any arguments!";
             
             if (command.usage) {
-                reply += "\nThe proper usage would be: " +
-                         "`" + this.config.prefix + command.name + " " + command.usage + "`";
+                reply += "\nThe proper usage would be: `" + this.config.prefix
+                        + command.name + " " + command.usage + "`";
             }
     
-            return message.reply(reply);
+            message.reply(reply);
+            return;
         }
-    
-        if (!this.cooldowns.has(command.name)) {
-            this.cooldowns.set(command.name, new Discord.Collection());
-        }
-        const now = Date.now();
-        const timestamps = this.cooldowns.get(command.name);
-        const cooldownAmount = (command.cooldown || this.config.defaultCooldown) * 1000;
         
-        if (timestamps.has(message.author.id)) {
-            const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
-    
-            if (now < expirationTime) {
-                const timeLeft = (expirationTime - now) / 1000;
-                return message.reply("please wait " + timeLeft.toFixed(1) + 
-                                     " more second(s) before reusing the `" +
-                                     command.name + "` command.");
-            }
+        const timeLeft = this.cooldownJob(command, message);
+        if (timeLeft > 0) {
+            message.reply("please wait " + timeLeft.toFixed(1) + 
+                    " more second(s) before reusing the `" + command.name +
+                    "` command.");
+            return;
         }
-    
-        timestamps.set(message.author.id, now);
-        setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
 
         try {
             command.execute(message, args);
@@ -143,17 +146,74 @@ class AirgetlamBot {
     }
 
     /* ---------------------------------------------------------------------- */
-
+    
     /**
-     * Inicializa o bot.
+     * Verifica se uma mensagem é válida para este bot.
+     * @return {boolean} true se e somente se a mensagem contém o prefixo
+     * configurado e não foi enviada por um bot
      */
-    init() {
-        this.loadCommands();
-
-        this.client.once("ready", () => this.onceReady());
-        this.client.on("message", message => this.onMessage(message));
-
-        this.client.login(this.config.token);
+    isMessageValid(message) {
+        if (message.author.bot) return false;
+        return message.content.startsWith(this.config.prefix);
+    }
+    
+    /* ---------------------------------------------------------------------- */
+    
+    /**
+     * Extrai o comando e os argumentos de uma mensagem.
+     * @return objeto cuja chave 'commandName' contém o nome do comando (string)
+     * e a chave 'args' contém um vetor de argumentos (string[])
+     */
+    extractCommandAndArgs(message) {
+        const args = message.content.slice(this.config.prefix.length).split(/ +/);
+        const commandName = args.shift().toLowerCase();
+        
+        return { commandName: commandName, args: args };
+    }
+    
+    /* ---------------------------------------------------------------------- */
+    
+    /**
+     * Obtém o module.exports de um comando a partir de seu nome. Também busca
+     * por aliases.
+     * @return objeto do comando, ou null se não existir
+     */
+    getCommandByNameOrAlias(name) {
+        const cmdList = this.client.commands;
+        return cmdList.get(name) || cmdList.find(cmd => cmd.aliases && cmd.aliases.includes(name));
+    }
+    
+    /* ---------------------------------------------------------------------- */
+    
+    /**
+     * Verifica se o autor da mensagem está no cooldown para o comando.
+     * Se estiver, retorna o tempo em segundos para que termine o cooldown.
+     * Senão, inicia um novo cooldown e retorna -1 (simbolizando que o autor
+     * pode usar o comando).
+     * @return {Number} tempo em segundos para terminar o cooldown do comando,
+     * ou -1, caso não esteja em cooldown
+     */
+    cooldownJob(command, message) {
+        if (!this.cooldowns.has(command.name)) {
+            this.cooldowns.set(command.name, new Discord.Collection());
+        }
+        const now = Date.now();
+        const timestamps = this.cooldowns.get(command.name);
+        const cooldownMs = (command.cooldown || this.config.defaultCooldown) * 1000;
+        
+        const authorId = message.author.id;
+        if (timestamps.has(authorId)) {
+            const expirationTime = timestamps.get(authorId) + cooldownMs;
+    
+            if (now < expirationTime) {
+                return (expirationTime - now) / 1000;
+            }
+        }
+        
+        timestamps.set(authorId, now);
+        setTimeout(() => timestamps.delete(message.author.id), cooldownMs);
+        
+        return -1;
     }
 
 }

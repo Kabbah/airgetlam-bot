@@ -13,6 +13,7 @@ const MusicSong = require("./music-song.js");
 
 /* ========================================================================== */
 
+// TODO: Verificar estas configs para melhorar a estabilidade da stream
 const ytdlOptions = {
     quality: "highestaudio",
     filter: "audioonly",
@@ -90,25 +91,19 @@ class MusicPlayer {
      * Começa a reproduzir uma música. Caso seja necessário, conecta-se a um
      * voice channel.
      * 
-     * *Atenção:* caso o bot já esteja executando alguma música, este método
-     * apenas retorna sem fazer nada. Nesse caso, deve ser executado o método
-     * `enqueue`.
-     * 
      * @param {Discord.VoiceChannel} voiceChannel canal para reproduzir música
      * @param {MusicSong} song música a reproduzir
      */
     startPlaying(voiceChannel, song) {
-        if (this.isPlaying) return;
-
         const player = this;
         if (!player.voiceConnection || (player.voiceConnection.channel.id !== voiceChannel.id)) {
             voiceChannel.join().then(connection => {
                 player.voiceConnection = connection;
-                player.playYouTube(song.id);
+                player.playYouTube(song);
             }).catch(console.log);
         }
         else {
-            player.playYouTube(song.id);
+            player.playYouTube(song);
         }
     }
 
@@ -119,24 +114,25 @@ class MusicPlayer {
      * em um voice channel.
      * Interrompe o timer de ociosidade.
      * 
-     * @param {string} songId ID da música no YouTube
+     * @param {MusicSong} song música a reproduzir
      * @private
      */
-    playYouTube(songId) {
-        const stream = ytdl("https://www.youtube.com/watch?v=" + songId, ytdlOptions);
+    playYouTube(song) {
+        const stream = ytdl(this.getYtUrl(song.id), ytdlOptions);
 
-        console.log("Now playing: " + songId);
+        console.log("Now playing: " + song.id);
 
         // const dispatcher = this.voiceConnection.playFile(filePath);
         const dispatcher = this.voiceConnection.playStream(stream);
+        dispatcher.setVolume(this.volume);
 
         if (this.leaveTimeout) {
             clearTimeout(this.leaveTimeout);
             this.leaveTimeout = null;
         }
         this.isPlaying = true;
-
-        dispatcher.setVolume(this.volume);
+        
+        this.sendEmbed(song, "Now playing");
         
         dispatcher.on("end", reason => {
             MusicPlayer.onSongEnd(this);
@@ -158,11 +154,11 @@ class MusicPlayer {
      * @param {MusicPlayer} player 
      */
     static onSongEnd(player) {
-        // TODO: Check queue for next song or autoplay mode.
+        // TODO: autoplay mode.
         if (player.queue.length > 0) {
             const queueItem = player.queue.shift();
 
-            player.playYouTube(queueItem.song.id);
+            player.playYouTube(queueItem.song);
             return;
         }
 
@@ -173,7 +169,6 @@ class MusicPlayer {
             player.musicController.dropPlayer(player);
         }, 10000);
         // TODO: put timer miliseconds on config.json
-        
     }
 
     /* ---------------------------------------------------------------------- */
@@ -188,17 +183,29 @@ class MusicPlayer {
 
         console.log("Song \"" + song.title + "\" enqueued by " + member.displayName);
 
+        this.sendEmbed(song, "Song enqueued");
+    }
+
+    /* ---------------------------------------------------------------------- */
+    
+    getYtUrl(videoId) {
+        return "https://www.youtube.com/watch?v=" + videoId;
+    }
+    
+    /* ---------------------------------------------------------------------- */
+    
+    sendEmbed(song, embedTitle) {
         const embed = new Discord.RichEmbed()
             .setColor(0x286ee0)
-            .setTitle("Song enqueued")
-            .setDescription("[" + song.title + "](" + "https://www.youtube.com/watch?v=" + song.id + ")\n" +
+            .setTitle(embedTitle)
+            .setDescription("[" + song.title + "](" + this.getYtUrl(song.id) + ")\n" +
                 "**Channel:** " + song.channelTitle + "\n" +
                 "**Duration:** " + song.duration.asSeconds() + " s\n" +
-                "**Enqueued by:** " + member.displayName)
+                "**Enqueued by:** " + "TODO")
             .setThumbnail(song.thumbnail);
         this.textChannel.send(embed);
     }
-
+    
     /* ---------------------------------------------------------------------- */
 
     /**
