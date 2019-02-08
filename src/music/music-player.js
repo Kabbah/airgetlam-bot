@@ -53,6 +53,11 @@ class MusicPlayer {
          */
         this.voiceConnection = null;
 
+        /** Dispatcher, usado para transmitir uma stream de áudio.
+         * @type {Discord.StreamDispatcher}
+         */
+        this.dispatcher = null;
+
         /** Volume, de 0.0 a 1.0.
          * @type {number}
          */
@@ -123,8 +128,8 @@ class MusicPlayer {
         console.log("Now playing: " + song.id);
 
         // const dispatcher = this.voiceConnection.playFile(filePath);
-        const dispatcher = this.voiceConnection.playStream(stream);
-        dispatcher.setVolume(this.volume);
+        this.dispatcher = this.voiceConnection.playStream(stream);
+        this.dispatcher.setVolume(this.volume);
 
         if (this.leaveTimeout) {
             clearTimeout(this.leaveTimeout);
@@ -132,22 +137,36 @@ class MusicPlayer {
         }
         this.isPlaying = true;
         
-        this.sendEmbed(song, "Now playing");
+        this.sendSongEmbed(song, ":arrow_forward: Now playing");
         
-        dispatcher.on("end", reason => {
+        this.dispatcher.on("end", reason => {
             MusicPlayer.onSongEnd(this);
             if (reason) console.log(reason);
         });
-        dispatcher.on("error", e => {
+        this.dispatcher.on("error", e => {
             console.error(e);
         });
     }
 
     /* ---------------------------------------------------------------------- */
 
+    skipCurrentSong() {
+        if (!this.dispatcher || !this.isPlaying) return;
+        
+        const embed = new Discord.RichEmbed()
+            .setColor(0x286ee0)
+            .setTitle(":track_next: Skipping...");
+        this.textChannel.send(embed);
+
+        this.dispatcher.end("Received a skip command");
+        // Isso emite um evento "end", que chama onSongEnd.
+    }
+
+    /* ---------------------------------------------------------------------- */
+
     /**
      * Função executada quando a execução de uma música termina.
-     * Verifica se o bot está no mdoo auto-play ou se há mais itens na fila.
+     * Verifica se o bot está no modo auto-play ou se há mais itens na fila.
      * Se sim, inicia a reprodução do próximo item.
      * Senão, inicia o timer de ociosidade.
      * 
@@ -183,7 +202,7 @@ class MusicPlayer {
 
         console.log("Song \"" + song.title + "\" enqueued by " + member.displayName);
 
-        this.sendEmbed(song, "Song enqueued");
+        this.sendSongEmbed(song, ":new: Song enqueued");
     }
 
     /* ---------------------------------------------------------------------- */
@@ -194,7 +213,7 @@ class MusicPlayer {
     
     /* ---------------------------------------------------------------------- */
     
-    sendEmbed(song, embedTitle) {
+    sendSongEmbed(song, embedTitle) {
         const embed = new Discord.RichEmbed()
             .setColor(0x286ee0)
             .setTitle(embedTitle)

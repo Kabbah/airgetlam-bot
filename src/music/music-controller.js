@@ -102,6 +102,25 @@ class MusicController {
 
     /* ---------------------------------------------------------------------- */
 
+    skip(message) {
+        const guildId = message.guild.id;
+        const player = this.players.get(guildId);
+
+        if (!player || !player.voiceConnection || !player.isPlaying) {
+            message.reply("I'm not playing anything in this server at the moment!");
+            return;
+        }
+
+        if (player.voiceConnection.channel.id === message.member.voiceChannel.id) {
+            player.skipCurrentSong();
+            return;
+        }
+
+        message.reply("you can only skip the current song if you are in my voice channel!");
+    }
+
+    /* ---------------------------------------------------------------------- */
+
     dropPlayer(player) {
         player.disconnect();
 
