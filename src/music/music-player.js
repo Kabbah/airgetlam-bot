@@ -73,6 +73,17 @@ class MusicPlayer {
          */
         this.currentSong = null;
 
+        /** Flag que mostra se o player está em modo autoplay.
+         * @type {boolean}
+         */
+        this.isAutoPlaying = false;
+
+        /** Pequeno cache de Video IDs para evitar que o autoplay fique preso em
+         * um ciclo.
+         * @type {string[]}
+         */
+        this.latestAutoplay = [];
+
         /** Referência a um timeout para sair do servidor, iniciado quando o
          * player fica ocioso.
          * @type {NodeJS.Timeout}
@@ -134,7 +145,7 @@ class MusicPlayer {
     playYouTube(song) {
         const stream = ytdl(this.getYtUrl(song.id), ytdlOptions);
 
-        console.log("Now playing: " + song.id);
+        console.log("Now playing: " + song.title);
 
         // const dispatcher = this.voiceConnection.playFile(filePath);
         this.dispatcher = this.voiceConnection.playStream(stream);
@@ -191,7 +202,6 @@ class MusicPlayer {
      * @param {MusicPlayer} player 
      */
     static onSongEnd(player) {
-        // TODO: autoplay mode.
         if (player.queue.length > 0) {
             const queueItem = player.queue.shift();
 
@@ -200,14 +210,37 @@ class MusicPlayer {
             return;
         }
 
-        // If there is no song to play, start a timeout for the bot to leave the
-        // voice channel.
+        if (player.isAutoPlaying) {
+            player.musicController.searchRelatedVideo(player.currentSong.song.id)
+                .then(musicSong => {
+                    const queueItem = new MusicQueueItem(null, musicSong);
+                    queueItem.user.displayName = "Autoplay";
+
+                    player.currentSong = queueItem;
+                    player.playYouTube(queueItem.song);
+                    console.log("Autoplay: " + queueItem.song.title);
+                })
+                .catch(err => {
+                    console.error(err);
+                    MusicPlayer.startLeaveTimeout(player);
+                });
+            return;
+        }
+
+        // Se não há nenhuma música a reproduzir, inicia um timeout para o bot
+        // sair do voice channel.
+        MusicPlayer.startLeaveTimeout(player);
+        // TODO: put timer miliseconds on config.json
+    }
+
+    /* ---------------------------------------------------------------------- */
+
+    static startLeaveTimeout(player) {
         player.isPlaying = false;
         player.currentSong = null;
         player.leaveTimeout = setTimeout(() => {
             player.musicController.dropPlayer(player);
         }, 10000);
-        // TODO: put timer miliseconds on config.json
     }
 
     /* ---------------------------------------------------------------------- */
@@ -242,6 +275,20 @@ class MusicPlayer {
                 "**Duration:** " + song.duration.asSeconds() + " s\n" +
                 "**Enqueued by:** " + memberName)
             .setThumbnail(song.thumbnail);
+        this.textChannel.send(embed);
+    }
+
+    /* ---------------------------------------------------------------------- */
+    
+    toggleAutoplay() {
+        this.isAutoPlaying = !this.isAutoPlaying;
+        if (this.latestAutoplay.length > 0) {
+            this.latestAutoplay.length = 0;
+        }
+
+        const embed = new Discord.RichEmbed()
+            .setColor(0x286ee0)
+            .setTitle("Autoplay is now " + ((this.isAutoPlaying)? "*on*" : "*off*"));
         this.textChannel.send(embed);
     }
     

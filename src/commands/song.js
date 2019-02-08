@@ -1,9 +1,9 @@
 const MusicController = require("../music/music-controller.js");
 
 module.exports = {
-    name: "np",
+    name: "song",
     description: "Shows current song.",
-    aliases: ["current"],
+    aliases: ["np", "current"],
     args: false,
     guildOnly: true,
     cooldown: 0,

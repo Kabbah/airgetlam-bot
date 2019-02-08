@@ -175,6 +175,20 @@ class MusicController {
 
     /* ---------------------------------------------------------------------- */
 
+    toggleAutoplay(message) {
+        const guildId = message.guild.id;
+        const player = this.players.get(guildId);
+
+        if (!player || !player.voiceConnection) {
+            message.reply("I'm not playing anything in this server at the moment!");
+            return;
+        }
+
+        player.toggleAutoplay();
+    }
+
+    /* ---------------------------------------------------------------------- */
+
     dropPlayer(player) {
         player.disconnect();
 
@@ -191,19 +205,32 @@ class MusicController {
         this.players.deleteAll();
     }
 
+    /* ---------------------------------------------------------------------- */
+
+    async searchRelatedVideo(videoId) {
+        return await searchYouTube(videoId, true);
+    }
+
 }
 
 /* ========================================================================== */
 
-async function searchYouTube(query) {
-    const searchResponse = await youtube.search.list({
+async function searchYouTube(query, findRelatedVideo = false) {
+    const searchOptions = {
         part: "snippet",
         type: "video",
-        q: query,
-        maxResults: 1,
+        maxResults: 5,
         regionCode: config.youtube.regionCode,
-    });
+    };
 
+    if (findRelatedVideo) {
+        searchOptions.relatedToVideoId = query;
+    }
+    else {
+        searchOptions.q = query;
+    }
+
+    const searchResponse = await youtube.search.list(searchOptions);
     if (searchResponse.data.items.length === 0) {
         return null;
     }

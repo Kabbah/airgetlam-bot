@@ -22,9 +22,9 @@ class MusicQueueItem {
      */
     constructor(member, song) {
         this.user = {
-            id: member.id,
-            displayName: member.displayName,
-            displayAvatarUrl: member.user.displayAvatarURL,
+            id: (member)? member.id : null,
+            displayName: (member)? member.displayName : null,
+            displayAvatarUrl: (member)? member.user.displayAvatarURL : null,
         };
         this.song = song;
     }
