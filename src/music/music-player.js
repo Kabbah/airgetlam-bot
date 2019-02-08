@@ -164,6 +164,15 @@ class MusicPlayer {
 
     /* ---------------------------------------------------------------------- */
 
+    setVolume(newVolume) {
+        this.volume = newVolume;
+        if (this.dispatcher !== null) {
+            this.dispatcher.setVolume(newVolume);
+        }
+    }
+
+    /* ---------------------------------------------------------------------- */
+
     /**
      * Função executada quando a execução de uma música termina.
      * Verifica se o bot está no modo auto-play ou se há mais itens na fila.

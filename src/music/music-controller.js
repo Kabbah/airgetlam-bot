@@ -121,6 +121,45 @@ class MusicController {
 
     /* ---------------------------------------------------------------------- */
 
+    tellVolume(message) {
+        const guildId = message.guild.id;
+        const player = this.players.get(guildId);
+
+        if (!player) {
+            message.reply("I am not playing anything in this server at the moment!");
+            return;
+        }
+
+        message.reply("the current volume is: " + player.volume * 50);
+    }
+
+    /* ---------------------------------------------------------------------- */
+
+    setVolume(message, newVolume) {
+        const guildId = message.guild.id;
+        const player = this.players.get(guildId);
+
+        if (!player || !player.voiceConnection) {
+            message.reply("you can only set the volume when I'm connected to a voice channel!");
+            return;
+        }
+
+        if (isNaN(newVolume)) {
+            message.reply("this is not a valid volume value!");
+            return;
+        }
+
+        // TODO: Configurar esse range, o (/50) abaixo e o (*50) acima
+        if (newVolume < 0 || newVolume > 100) {
+            message.reply("please specify a volume value between 0 and 100.");
+            return;
+        }
+
+        player.setVolume(newVolume / 50);
+    }
+
+    /* ---------------------------------------------------------------------- */
+
     dropPlayer(player) {
         player.disconnect();
 
