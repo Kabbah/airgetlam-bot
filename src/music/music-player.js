@@ -68,6 +68,11 @@ class MusicPlayer {
          */
         this.isPlaying = false;
 
+        /** Música que está tocando no momento.
+         * @type {MusicQueueItem}
+         */
+        this.currentSong = null;
+
         /** Referência a um timeout para sair do servidor, iniciado quando o
          * player fica ocioso.
          * @type {NodeJS.Timeout}
@@ -96,11 +101,15 @@ class MusicPlayer {
      * Começa a reproduzir uma música. Caso seja necessário, conecta-se a um
      * voice channel.
      * 
-     * @param {Discord.VoiceChannel} voiceChannel canal para reproduzir música
+     * @param {Discord.GuildMember} voiceChannel membro que solicitou uma música
      * @param {MusicSong} song música a reproduzir
      */
-    startPlaying(voiceChannel, song) {
+    startPlaying(member, song) {
+        const voiceChannel = member.voiceChannel;
         const player = this;
+
+        this.currentSong = new MusicQueueItem(member, song);
+
         if (!player.voiceConnection || (player.voiceConnection.channel.id !== voiceChannel.id)) {
             voiceChannel.join().then(connection => {
                 player.voiceConnection = connection;
@@ -137,7 +146,7 @@ class MusicPlayer {
         }
         this.isPlaying = true;
         
-        this.sendSongEmbed(song, ":arrow_forward: Now playing");
+        this.sendSongEmbed(song, ":arrow_forward: Now playing", this.currentSong.user.displayName);
         
         this.dispatcher.on("end", reason => {
             MusicPlayer.onSongEnd(this);
@@ -186,6 +195,7 @@ class MusicPlayer {
         if (player.queue.length > 0) {
             const queueItem = player.queue.shift();
 
+            player.currentSong = queueItem;
             player.playYouTube(queueItem.song);
             return;
         }
@@ -193,6 +203,7 @@ class MusicPlayer {
         // If there is no song to play, start a timeout for the bot to leave the
         // voice channel.
         player.isPlaying = false;
+        player.currentSong = null;
         player.leaveTimeout = setTimeout(() => {
             player.musicController.dropPlayer(player);
         }, 10000);
@@ -211,7 +222,7 @@ class MusicPlayer {
 
         console.log("Song \"" + song.title + "\" enqueued by " + member.displayName);
 
-        this.sendSongEmbed(song, ":new: Song enqueued");
+        this.sendSongEmbed(song, ":new: Song enqueued", member.displayName);
     }
 
     /* ---------------------------------------------------------------------- */
@@ -222,14 +233,14 @@ class MusicPlayer {
     
     /* ---------------------------------------------------------------------- */
     
-    sendSongEmbed(song, embedTitle) {
+    sendSongEmbed(song, embedTitle, memberName) {
         const embed = new Discord.RichEmbed()
             .setColor(0x286ee0)
             .setTitle(embedTitle)
             .setDescription("[" + song.title + "](" + this.getYtUrl(song.id) + ")\n" +
                 "**Channel:** " + song.channelTitle + "\n" +
                 "**Duration:** " + song.duration.asSeconds() + " s\n" +
-                "**Enqueued by:** " + "TODO")
+                "**Enqueued by:** " + memberName)
             .setThumbnail(song.thumbnail);
         this.textChannel.send(embed);
     }

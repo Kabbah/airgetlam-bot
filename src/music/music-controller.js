@@ -77,7 +77,7 @@ class MusicController {
             searchYouTube(songName).then(musicSong => {
                 if (musicSong === null) return;
                 player.setTextChannel(message.channel);
-                player.startPlaying(message.member.voiceChannel, musicSong);
+                player.startPlaying(message.member, musicSong);
             });
             return;
         }
@@ -156,6 +156,21 @@ class MusicController {
         }
 
         player.setVolume(newVolume / 50);
+    }
+
+    /* ---------------------------------------------------------------------- */
+
+    showCurrentSong(message) {
+        const guildId = message.guild.id;
+        const player = this.players.get(guildId);
+
+        if (!player || !player.voiceConnection || !player.isPlaying) {
+            message.reply("I'm not playing anything in this server at the moment!");
+            return;
+        }
+
+        // TODO: Melhorar isso aqui: mostrar andamento
+        player.sendSongEmbed(player.currentSong.song, "Current song", player.currentSong.user.displayName);
     }
 
     /* ---------------------------------------------------------------------- */
