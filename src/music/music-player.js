@@ -6,6 +6,7 @@
 /* ========================================================================== */
 
 const Discord = require("discord.js");
+const moment = require("moment");
 const ytdl = require("ytdl-core");
 
 const MusicQueueItem = require("./music-queue-item.js");
@@ -265,6 +266,28 @@ class MusicPlayer {
     }
     
     /* ---------------------------------------------------------------------- */
+
+    getDurationStr(duration) {
+        const seconds = duration.seconds();
+        const minutes = duration.minutes();
+        const hours = Math.trunc((duration.asSeconds() - seconds - minutes*60) / 3600);
+
+        let durationStr = seconds.toString();
+        if (seconds < 10) {
+            durationStr = "0" + durationStr;
+        }
+        durationStr = minutes.toString() + ":" + durationStr;
+        if (hours > 0) {
+            if (minutes < 10) {
+                durationStr = ":0" + durationStr;
+            }
+            durationStr = hours.toString() + durationStr;
+        }
+        
+        return durationStr;
+    }
+
+    /* ---------------------------------------------------------------------- */
     
     sendSongEmbed(song, embedTitle, memberName) {
         const embed = new Discord.RichEmbed()
@@ -272,7 +295,27 @@ class MusicPlayer {
             .setTitle(embedTitle)
             .setDescription("[" + song.title + "](" + this.getYtUrl(song.id) + ")\n" +
                 "**Channel:** " + song.channelTitle + "\n" +
-                "**Duration:** " + song.duration.asSeconds() + " s\n" +
+                "**Duration:** " + this.getDurationStr(song.duration) + "\n" +
+                "**Enqueued by:** " + memberName)
+            .setThumbnail(song.thumbnail);
+        this.textChannel.send(embed);
+    }
+
+    /* ---------------------------------------------------------------------- */
+    
+    sendCurrentSongEmbed() {
+        const song = this.currentSong.song;
+        const memberName = this.currentSong.user.displayName;
+        const ytUrl = this.getYtUrl(song.id);
+        const totalDuration = this.getDurationStr(song.duration);
+        const timePlayed = this.getDurationStr(moment.duration(this.dispatcher.time));
+
+        const embed = new Discord.RichEmbed()
+            .setColor(0x286ee0)
+            .setTitle("Current song")
+            .setDescription("[" + song.title + "](" + ytUrl + ")\n" +
+                "**Channel:** " + song.channelTitle + "\n" +
+                "**Duration:** " + timePlayed + "/" + totalDuration + "\n" +
                 "**Enqueued by:** " + memberName)
             .setThumbnail(song.thumbnail);
         this.textChannel.send(embed);

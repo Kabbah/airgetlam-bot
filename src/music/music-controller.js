@@ -170,7 +170,7 @@ class MusicController {
         }
 
         // TODO: Melhorar isso aqui: mostrar andamento
-        player.sendSongEmbed(player.currentSong.song, "Current song", player.currentSong.user.displayName);
+        player.sendCurrentSongEmbed();
     }
 
     /* ---------------------------------------------------------------------- */
