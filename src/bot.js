@@ -41,12 +41,16 @@ class AirgetlamBot {
          */
         this.cooldowns = new Discord.Collection();
 
-        process.on("SIGTERM", () => {
-            const musiccontroller = new MusicController();
-            musiccontroller.dropAllPlayers();
-
-            this.client.destroy().then(process.exit, process.exit);
-        });
+        for (const signal of ["SIGTERM", "SIGINT"]) {
+            process.on(signal, () => {
+                const musiccontroller = new MusicController();
+                musiccontroller.dropAllPlayers();
+                
+                this.client.destroy()
+                    .then(() => process.exit(0))
+                    .catch(() => process.exit(1));
+            });
+        }
     }
     
     /* ---------------------------------------------------------------------- */
