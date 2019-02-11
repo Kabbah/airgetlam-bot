@@ -169,8 +169,21 @@ class MusicController {
             return;
         }
 
-        // TODO: Melhorar isso aqui: mostrar andamento
         player.sendCurrentSongEmbed();
+    }
+
+    /* ---------------------------------------------------------------------- */
+
+    showQueue(message, page) {
+        const guildId = message.guild.id;
+        const player = this.players.get(guildId);
+
+        if (!player || !player.voiceConnection || !player.isPlaying) {
+            message.reply("I'm not playing anything in this server at the moment!");
+            return;
+        }
+
+        player.sendQueueEmbed(page);
     }
 
     /* ---------------------------------------------------------------------- */

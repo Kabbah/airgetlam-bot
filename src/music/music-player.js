@@ -322,6 +322,35 @@ class MusicPlayer {
     }
 
     /* ---------------------------------------------------------------------- */
+
+    sendQueueEmbed(page) {
+        let start = (page-1) * 10;
+        let end = start + 10;
+        if (end > this.queue.length) {
+            end = this.queue.length;
+        }
+        if (start > end) {
+            start = end - 1 - ((end-1) % 10);
+        }
+
+        const items = this.queue.slice(start, end);
+
+        let description = "";
+        let position = start + 1;
+        for (const queueItem of items) {
+            description += "**" + position + "**: " + queueItem.song.title + "\n";
+            ++position;
+        }
+
+        const embed = new Discord.RichEmbed()
+            .setColor(0x286ee0)
+            .setTitle("Queue")
+            .setDescription(description)
+            .setFooter("Page " + (Math.trunc(start/10) + 1) + " of " + (Math.trunc((this.queue.length - 1)/10) + 1));
+        this.textChannel.send(embed);
+    }
+
+    /* ---------------------------------------------------------------------- */
     
     toggleAutoplay() {
         this.isAutoPlaying = !this.isAutoPlaying;
