@@ -10,7 +10,7 @@
     "bufferutil": "^4.0.1",
     "discord.js": "^11.4.2",
     "erlpack": "github:hammerandchisel/erlpack",
-    "googleapis": "^37.1.0",
+    "googleapis": "^37.2.0",
     "libsodium-wrappers": "^0.7.4",
     "moment": "^2.24.0",
     "node-opus": "^0.3.1",
