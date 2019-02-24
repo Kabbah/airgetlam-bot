@@ -42,7 +42,7 @@ class MusicController {
 
         this.constructor.instance = this;
     }
-    
+
     /* ---------------------------------------------------------------------- */
 
     /**
@@ -73,12 +73,14 @@ class MusicController {
         //  * ou o bot não está em nenhum voice channel no server,
         //  * ou o bot está em um voice channel, mas não está reproduzindo nada.
         if (!player.voiceConnection || !player.isPlaying) {
-            player.isPlaying = true;
-            searchYouTube(songName).then(musicSong => {
-                if (musicSong === null) return;
-                player.setTextChannel(message.channel);
-                player.startPlaying(message.member, musicSong);
-            });
+            searchYouTube(songName)
+                .then(musicSong => {
+                    if (musicSong === null) return;
+                    player.isPlaying = true;
+                    player.setTextChannel(message.channel);
+                    player.startPlaying(message.member, musicSong);
+                })
+                .catch(console.error);
             return;
         }
         
@@ -86,11 +88,13 @@ class MusicController {
         // Caso em que o bot está reproduzindo algo, e está no mesmo voice
         // channel que o membro que solicitou uma música.
         if (player.voiceConnection.channel.id === message.member.voiceChannel.id) {
-            searchYouTube(songName).then(musicSong => {
-                if (musicSong === null) return;
-                player.setTextChannel(message.channel);
-                player.enqueue(message.member, musicSong);
-            }).catch(console.error);
+            searchYouTube(songName)
+                .then(musicSong => {
+                    if (musicSong === null) return;
+                    player.setTextChannel(message.channel);
+                    player.enqueue(message.member, musicSong);
+                })
+                .catch(console.error);
             return;
         }
         
@@ -228,7 +232,109 @@ class MusicController {
 
 /* ========================================================================== */
 
+/**
+ * Aplica uma expressão regular no parâmetro str e tenta obter o valor do ID
+ * do vídeo.
+ * 
+ * @param {string} str string de parâmetro do comando play
+ */
+function getYouTubeVideoIdFromUrl(str) {
+    const regex = /^(?:http(?:s)?:\/\/)?(?:(?:(?:www\.)?youtube\.com\/watch\?(?:\w*=\w*&)*v=)|(?:youtu\.be\/))([0-9A-Za-z_-]{10}[048AEIMQUYcgkosw])/g;
+
+    const match = regex.exec(str);
+    if (match) {
+        return match[1];
+    }
+    return null;
+}
+
+/* -------------------------------------------------------------------------- */
+
 async function searchYouTube(query, findRelatedVideo = false) {
+    if (findRelatedVideo) {
+        return await searchYouTubeRelatedVideo(query);
+    }
+
+    const videoId = getYouTubeVideoIdFromUrl(query);
+    if (videoId) {
+        console.log("User provided direct YouTube URL. Video ID is " + videoId + ". Skipping youtube.search.list.");
+        return await searchYouTubeByVideoId(videoId);
+    }
+
+    return await searchYouTubeByQuery(query);
+}
+
+/* -------------------------------------------------------------------------- */
+
+async function searchYouTubeByQuery(query) {
+    const searchResponse = await doYouTubeSearchList({ q: query });
+    if (searchResponse.data.items.length === 0) {
+        return null;
+    }
+
+    const videoInfo = searchResponse.data.items[0];
+
+    const videoDetails = await youtube.videos.list({
+        part: "contentDetails",
+        id: videoInfo.id.videoId,
+    });
+    if (videoDetails.data.items.length === 0) {
+        return null;
+    }
+
+    const musicSong = new MusicSong(videoInfo);
+    musicSong.setDuration(videoDetails.data.items[0].contentDetails.duration);
+
+    return musicSong;
+}
+
+/* -------------------------------------------------------------------------- */
+
+async function searchYouTubeByVideoId(videoId) {
+    const videoDetails = await youtube.videos.list({
+        part: "snippet,contentDetails",
+        id: videoId,
+    });
+    if (videoDetails.data.items.length === 0) {
+        return null;
+    }
+
+    const videoInfo = videoDetails.data.items[0];
+
+    const musicSong = new MusicSong(videoInfo);
+    musicSong.id = videoId;
+    musicSong.setDuration(videoInfo.contentDetails.duration);
+
+    return musicSong;
+}
+
+/* -------------------------------------------------------------------------- */
+
+async function searchYouTubeRelatedVideo(videoId) {
+    const searchResponse = await doYouTubeSearchList({ relatedToVideoId: videoId });
+    if (searchResponse.data.items.length === 0) {
+        return null;
+    }
+
+    const videoInfo = searchResponse.data.items[0];
+    
+    const videoDetails = await youtube.videos.list({
+        part: "contentDetails",
+        id: videoInfo.id.videoId,
+    });
+    if (videoDetails.data.items.length === 0) {
+        return null;
+    }
+
+    const musicSong = new MusicSong(videoInfo);
+    musicSong.setDuration(videoDetails.data.items[0].contentDetails.duration);
+
+    return musicSong;
+}
+
+/* -------------------------------------------------------------------------- */
+
+async function doYouTubeSearchList(extraSearchOptions) {
     const searchOptions = {
         part: "snippet",
         type: "video",
@@ -236,31 +342,11 @@ async function searchYouTube(query, findRelatedVideo = false) {
         regionCode: config.youtube.regionCode,
     };
 
-    if (findRelatedVideo) {
-        searchOptions.relatedToVideoId = query;
-    }
-    else {
-        searchOptions.q = query;
+    for (const key in extraSearchOptions) {
+        searchOptions[key] = extraSearchOptions[key];
     }
 
-    const searchResponse = await youtube.search.list(searchOptions);
-    if (searchResponse.data.items.length === 0) {
-        return null;
-    }
-
-    const videoInfo = searchResponse.data.items[0];
-    const musicSong = new MusicSong(videoInfo);
-    
-    const videoDetails = await youtube.videos.list({
-        part: "contentDetails",
-        id: videoInfo.id.videoId,
-    });
-
-    if (videoDetails.data.items.length !== 0) {
-        musicSong.setDuration(videoDetails.data.items[0].contentDetails.duration);
-    }
-
-    return musicSong;
+    return await youtube.search.list(searchOptions);
 }
 
 /* ========================================================================== */
