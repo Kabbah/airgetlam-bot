@@ -21,6 +21,8 @@ const ytdlOptions = {
     highWaterMark: 1 << 25,
 };
 
+const MAX_AUTOPLAY_HISTORY = 4;
+
 /* ========================================================================== */
 
 /**
@@ -212,7 +214,13 @@ class MusicPlayer {
         }
 
         if (player.isAutoPlaying) {
-            player.musicController.searchRelatedVideo(player.currentSong.song.id)
+            const videoId = player.currentSong.song.id;
+            player.latestAutoplay.push(videoId);
+            while (player.latestAutoplay.length > MAX_AUTOPLAY_HISTORY) {
+                player.latestAutoplay.shift();
+            }
+            
+            player.musicController.searchRelatedVideo(videoId, player.latestAutoplay)
                 .then(musicSong => {
                     const queueItem = new MusicQueueItem(null, musicSong);
                     queueItem.user.displayName = "Autoplay";
@@ -255,6 +263,10 @@ class MusicPlayer {
         this.queue.push(new MusicQueueItem(member, song));
 
         console.log("Song \"" + song.title + "\" enqueued by " + member.displayName);
+        
+        // Caso alguém coloque uma música enquanto está no modo autoplay, limpa
+        // o histórico de autoplay.
+        this.clearAutoplayHistory();
 
         this.sendSongEmbed(song, ":new: Song enqueued", member.displayName);
     }
@@ -354,14 +366,18 @@ class MusicPlayer {
     
     toggleAutoplay() {
         this.isAutoPlaying = !this.isAutoPlaying;
-        if (this.latestAutoplay.length > 0) {
-            this.latestAutoplay.length = 0;
-        }
+        this.clearAutoplayHistory();
 
         const embed = new Discord.RichEmbed()
             .setColor(0x286ee0)
             .setTitle("Autoplay is now " + ((this.isAutoPlaying)? "*on*" : "*off*"));
         this.textChannel.send(embed);
+    }
+    
+    /* ---------------------------------------------------------------------- */
+    
+    clearAutoplayHistory() {
+        this.latestAutoplay.length = 0;
     }
     
     /* ---------------------------------------------------------------------- */

@@ -103,7 +103,7 @@ class MusicController {
         // channel que o membro que solicitou uma música.
         message.reply("you must be in the same voice channel I'm playing at the moment!");
     }
-
+    
     /* ---------------------------------------------------------------------- */
 
     skip(message) {
@@ -130,7 +130,7 @@ class MusicController {
         const player = this.players.get(guildId);
 
         if (!player) {
-            message.reply("I am not playing anything in this server at the moment!");
+            message.reply("I'm not playing anything in this server at the moment!");
             return;
         }
 
@@ -224,8 +224,8 @@ class MusicController {
 
     /* ---------------------------------------------------------------------- */
 
-    async searchRelatedVideo(videoId) {
-        return await searchYouTube(videoId, true);
+    async searchRelatedVideo(videoId, videoHistory) {
+        return await searchYouTubeRelatedVideo(videoId, videoHistory);
     }
 
 }
@@ -250,11 +250,7 @@ function getYouTubeVideoIdFromUrl(str) {
 
 /* -------------------------------------------------------------------------- */
 
-async function searchYouTube(query, findRelatedVideo = false) {
-    if (findRelatedVideo) {
-        return await searchYouTubeRelatedVideo(query);
-    }
-
+async function searchYouTube(query) {
     const videoId = getYouTubeVideoIdFromUrl(query);
     if (videoId) {
         console.log("User provided direct YouTube URL. Video ID is " + videoId + ". Skipping youtube.search.list.");
@@ -310,13 +306,26 @@ async function searchYouTubeByVideoId(videoId) {
 
 /* -------------------------------------------------------------------------- */
 
-async function searchYouTubeRelatedVideo(videoId) {
+async function searchYouTubeRelatedVideo(videoId, videoHistory) {
     const searchResponse = await doYouTubeSearchList({ relatedToVideoId: videoId });
-    if (searchResponse.data.items.length === 0) {
+    const videos = searchResponse.data.items;
+    
+    if (videos.length === 0) {
         return null;
     }
-
-    const videoInfo = searchResponse.data.items[0];
+    
+    let videoInfo = null;
+    for (const video of videos) {
+        if (!videoHistory.includes(video.id.videoId)) {
+            videoInfo = video;
+            break;
+        }
+        console.log("Video " + video.id.videoId + " already in history.");
+    }
+    if (!videoInfo) {
+        // Every video found was in the cache already. Choose the last result.
+        videoInfo = videos[videos.length - 1];
+    }
     
     const videoDetails = await youtube.videos.list({
         part: "contentDetails",
