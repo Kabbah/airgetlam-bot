@@ -19,5 +19,5 @@
     "ytdl-core": "^0.29.1"
   },
   "author": "Victor Barpp Gomes",
-  "license": "ISC"
+  "license": "MIT"
 }
