@@ -5,6 +5,7 @@
 /* Data: 2019/01/14                                                           */
 /* ========================================================================== */
 
+const AsyncLock = require("async-lock");
 const Discord = require("discord.js");
 const moment = require("moment");
 const ytdl = require("ytdl-core");
@@ -17,7 +18,6 @@ const MusicSong = require("./music-song.js");
 // TODO: Verificar estas configs para melhorar a estabilidade da stream
 const ytdlOptions = {
     quality: "highestaudio",
-    filter: "audioonly",
     highWaterMark: 1 << 25,
 };
 
@@ -97,6 +97,9 @@ class MusicPlayer {
          * @type {MusicQueueItem[]}
          */
         this.queue = [];
+        
+        /** Lock para acesso concorrente. */
+        this.lock = new AsyncLock();
     }
 
     /* ---------------------------------------------------------------------- */
@@ -205,41 +208,44 @@ class MusicPlayer {
      * @param {MusicPlayer} player 
      */
     static onSongEnd(player) {
-        if (player.queue.length > 0) {
-            const queueItem = player.queue.shift();
+        // Isso é triste, mas aqui pode acontecer concorrência.
+        player.lock.acquire("lock", () => {
+            if (player.queue.length > 0) {
+                const queueItem = player.queue.shift();
 
-            player.currentSong = queueItem;
-            player.playYouTube(queueItem.song);
-            return;
-        }
+                player.currentSong = queueItem;
+                player.playYouTube(queueItem.song);
+                return;
+            }
 
-        if (player.isAutoPlaying) {
-            const videoId = player.currentSong.song.id;
-            player.latestAutoplay.push(videoId);
-            while (player.latestAutoplay.length > MAX_AUTOPLAY_HISTORY) {
-                player.latestAutoplay.shift();
+            if (player.isAutoPlaying) {
+                const videoId = player.currentSong.song.id;
+                player.latestAutoplay.push(videoId);
+                while (player.latestAutoplay.length > MAX_AUTOPLAY_HISTORY) {
+                    player.latestAutoplay.shift();
+                }
+                
+                player.musicController.searchRelatedVideo(videoId, player.latestAutoplay)
+                    .then(musicSong => {
+                        const queueItem = new MusicQueueItem(null, musicSong);
+                        queueItem.user.displayName = "Autoplay";
+                        
+                        player.currentSong = queueItem;
+                        player.playYouTube(queueItem.song);
+                        console.log("Autoplay: " + queueItem.song.title);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        MusicPlayer.startLeaveTimeout(player);
+                    });
+                return;
             }
             
-            player.musicController.searchRelatedVideo(videoId, player.latestAutoplay)
-                .then(musicSong => {
-                    const queueItem = new MusicQueueItem(null, musicSong);
-                    queueItem.user.displayName = "Autoplay";
-
-                    player.currentSong = queueItem;
-                    player.playYouTube(queueItem.song);
-                    console.log("Autoplay: " + queueItem.song.title);
-                })
-                .catch(err => {
-                    console.error(err);
-                    MusicPlayer.startLeaveTimeout(player);
-                });
-            return;
-        }
-
-        // Se não há nenhuma música a reproduzir, inicia um timeout para o bot
-        // sair do voice channel.
-        MusicPlayer.startLeaveTimeout(player);
-        // TODO: put timer miliseconds on config.json
+            // Se não há nenhuma música a reproduzir, inicia um timeout para o bot
+            // sair do voice channel.
+            MusicPlayer.startLeaveTimeout(player);
+            // TODO: put timer miliseconds on config.json
+        }).catch(console.error);
     }
 
     /* ---------------------------------------------------------------------- */
