@@ -19,7 +19,7 @@ class MusicSong {
         this.id = video.id.videoId;
         this.title = video.snippet.title;
         this.channelTitle = video.snippet.channelTitle;
-        this.thumbnail = video.snippet.thumbnails.default.url;
+        this.thumbnail = video.snippet.thumbnails.high.url;
         this.duration = null;
     }
 
