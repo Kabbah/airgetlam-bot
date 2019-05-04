@@ -1,23 +1,35 @@
 {
   "name": "airgetlam-bot",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Discord bot",
   "main": "src/index.js",
   "scripts": {
     "start": "node ./src/index.js"
   },
   "dependencies": {
-    "bufferutil": "^4.0.1",
     "discord.js": "^11.4.2",
-    "erlpack": "github:hammerandchisel/erlpack",
-    "googleapis": "^37.2.0",
+    "googleapis": "^39.2.0",
     "libsodium-wrappers": "^0.7.4",
     "moment": "^2.24.0",
     "node-opus": "^0.3.1",
-    "sodium": "^3.0.2",
-    "uws": "^99.0.0",
+    "uws": "^100.0.1",
     "ytdl-core": "^0.29.1"
   },
   "author": "Victor Barpp Gomes",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kabbah/airgetlam-bot.git"
+  },
+  "keywords": [
+    "discord",
+    "nodejs",
+    "music",
+    "bot"
+  ],
+  "bugs": {
+    "url": "https://github.com/Kabbah/airgetlam-bot/issues"
+  },
+  "homepage": "https://github.com/Kabbah/airgetlam-bot#readme"
 }
