@@ -1,0 +1,14 @@
+{
+    "discord": {
+        "token": "P4st3_Y0uR_t0K3n_h3R3",
+        "commands": {
+            "prefix": "*",
+            "defaultCooldown": 2
+        }
+    },
+    "youtube": {
+        "key": "P4st3_Y0uR_K3y_h3R3",
+        "maxResults": 5,
+        "regionCode": "US"
+    }
+}

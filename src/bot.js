@@ -55,7 +55,7 @@ class AirgetlamBot {
             });
         }
     }
-    
+
     /* ---------------------------------------------------------------------- */
 
     /**
@@ -67,7 +67,9 @@ class AirgetlamBot {
         this.client.once("ready", () => this.onceReady());
         this.client.on("message", message => this.onMessage(message));
 
-        this.client.login(this.config.discord.token);
+        this.client.login(this.config.discord.token).catch(err => {
+            console.error(err);
+        });
     }
 
     /* ---------------------------------------------------------------------- */
