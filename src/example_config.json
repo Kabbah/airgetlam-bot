@@ -8,7 +8,7 @@
     },
     "youtube": {
         "key": "P4st3_Y0uR_K3y_h3R3",
-        "maxResults": 5,
+        "maxResults": 20,
         "regionCode": "US"
     }
 }

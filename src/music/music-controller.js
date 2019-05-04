@@ -347,7 +347,7 @@ async function doYouTubeSearchList(extraSearchOptions) {
     const searchOptions = {
         part: "snippet",
         type: "video",
-        maxResults: 5,
+        maxResults: config.youtube.maxResults,
         regionCode: config.youtube.regionCode,
     };
 

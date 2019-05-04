@@ -21,7 +21,7 @@ const ytdlOptions = {
     highWaterMark: 1 << 25,
 };
 
-const MAX_AUTOPLAY_HISTORY = 4;
+const MAX_AUTOPLAY_HISTORY = require("../config.json").youtube.maxResults - 1;
 
 /* ========================================================================== */
 
