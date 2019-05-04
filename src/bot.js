@@ -7,13 +7,13 @@
 
 const Discord = require("discord.js");
 const fs = require("fs");
+const path = require("path");
 
 const MusicController = require("./music/music-controller.js");
 
 /* ========================================================================== */
 
-// TODO: Colocar isso nas configurações
-const commandsPath = "/src/commands";
+const commandsPath = "commands";
 
 /* ========================================================================== */
 
@@ -26,6 +26,9 @@ class AirgetlamBot {
     constructor() {
         /** Parâmetros de configuração. */
         this.config = require("./config.json");
+
+        /** Prefixo dos comandos. */
+        this.prefix = this.config.discord.commands.prefix;
 
         /** Cliente Discord do bot. */
         this.client = new Discord.Client();
@@ -64,7 +67,7 @@ class AirgetlamBot {
         this.client.once("ready", () => this.onceReady());
         this.client.on("message", message => this.onMessage(message));
 
-        this.client.login(this.config.token);
+        this.client.login(this.config.discord.token);
     }
 
     /* ---------------------------------------------------------------------- */
@@ -74,7 +77,7 @@ class AirgetlamBot {
      * diretório de comandos.
      */
     loadCommands() {
-        const commandFiles = fs.readdirSync(this.config.basedir + commandsPath)
+        const commandFiles = fs.readdirSync(path.resolve(__dirname, commandsPath))
             .filter(file => file.endsWith(".js"));
         
         for (const file of commandFiles) {
@@ -124,8 +127,8 @@ class AirgetlamBot {
             let reply = "you didn't provide any arguments!";
             
             if (command.usage) {
-                reply += "\nThe proper usage would be: `" + this.config.prefix
-                        + command.name + " " + command.usage + "`";
+                reply += "\nThe proper usage would be: `"
+                        + this.prefix + command.name + " " + command.usage + "`";
             }
     
             message.reply(reply);
@@ -158,7 +161,7 @@ class AirgetlamBot {
      */
     isMessageValid(message) {
         if (message.author.bot) return false;
-        return message.content.startsWith(this.config.prefix);
+        return message.content.startsWith(this.prefix);
     }
     
     /* ---------------------------------------------------------------------- */
@@ -169,7 +172,7 @@ class AirgetlamBot {
      * e a chave 'args' contém um vetor de argumentos (string[])
      */
     extractCommandAndArgs(message) {
-        const args = message.content.slice(this.config.prefix.length).split(/ +/);
+        const args = message.content.slice(this.prefix.length).split(/ +/);
         const commandName = args.shift().toLowerCase();
         
         return { commandName: commandName, args: args };
@@ -203,7 +206,8 @@ class AirgetlamBot {
         }
         const now = Date.now();
         const timestamps = this.cooldowns.get(command.name);
-        const cooldownMs = (command.cooldown || this.config.defaultCooldown) * 1000;
+        const cooldownMs = 1000 * 
+            (command.cooldown || this.config.discord.commands.defaultCooldown);
         
         const authorId = message.author.id;
         if (timestamps.has(authorId)) {
