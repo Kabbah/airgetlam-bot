@@ -5,7 +5,6 @@
 /* Data: 2019/01/14                                                           */
 /* ========================================================================== */
 
-const AsyncLock = require("async-lock");
 const Discord = require("discord.js");
 const moment = require("moment");
 const ytdl = require("ytdl-core");
@@ -97,9 +96,6 @@ class MusicPlayer {
          * @type {MusicQueueItem[]}
          */
         this.queue = [];
-        
-        /** Lock para acesso concorrente. */
-        this.lock = new AsyncLock();
     }
 
     /* ---------------------------------------------------------------------- */
