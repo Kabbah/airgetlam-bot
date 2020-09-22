@@ -7,14 +7,16 @@
     "start": "node ./src/index.js"
   },
   "dependencies": {
-    "discord.js": "^11.4.2",
-    "erlpack": "github:discordapp/erlpack",
-    "googleapis": "^39.2.0",
-    "libsodium-wrappers": "^0.7.4",
-    "moment": "^2.24.0",
-    "node-opus": "^0.3.1",
-    "uws": "^100.0.1",
-    "ytdl-core": "^0.29.1"
+    "@discordjs/opus": "^0.3.2",
+    "bufferutil": "^4.0.1",
+    "discord.js": "^12.3.1",
+    "erlpack": "github:discord/erlpack",
+    "googleapis": "^59.0.0",
+    "moment": "^2.29.0",
+    "sodium": "^3.0.2",
+    "utf-8-validate": "^5.0.2",
+    "ytdl-core": "^3.2.2",
+    "zlib-sync": "^0.1.7"
   },
   "author": "Victor Barpp Gomes",
   "license": "MIT",
